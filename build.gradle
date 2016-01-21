@@ -1,0 +1,71 @@
+import java.awt.*
+import java.util.List
+
+apply plugin: 'groovy'
+apply from: 'gradle/idea.gradle'
+apply from: 'gradle/eclipse.gradle'
+
+version = '0.5'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    def groovyComponents = ['groovy', 'groovy-ant', 'groovy-sql', 'groovy-test']
+    testCompile groovyComponents.collect { "org.codehaus.groovy:$it:2.4.3" }
+    testCompile 'com.h2database:h2:1.3.168'
+    testCompile 'org.spockframework:spock-core:1.0-groovy-2.4'
+}
+
+tasks.addRule('Pattern: gcode<Number>: Runs a single gcode') { String taskName ->
+    if (taskName.startsWith('gcode') && taskName.length() > 6) {
+        // create a dummy task for the task name specified on the command line
+        def dummyTask = task(taskName)
+        def codeName = taskName[0].toUpperCase() + taskName[1..-1]
+
+        // make all Test tasks a dependency of the dummy task and reset the includes
+        tasks.withType(Test) { testTask ->
+            logger.info("Single Code Execution: apply include pattern to Test task <$testTask.name>")
+            testTask.includes = WrapUtil.toSet("**/${codeName}.class")
+            dummyTask.dependsOn testTask
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.3'
+}
+
+// show welcome message
+task sayHello << {
+    List<String> lines = file('gradle/one-liners.txt').readLines()
+    def quote = lines.get(new Random().nextInt(lines.size() - 1))
+    println "Welcome to Groovy Coding Project ${version}:\n${quote}"
+    println "${'-' * quote.size()}\n"
+}
+
+test.dependsOn sayHello
+
+// launch browser if test failed. otherwise show that gcode is complete
+gradle.taskGraph.afterTask { task, taskState ->
+    if (task.name != 'test')
+        return
+
+    if (taskState.failure) {
+        String testRepDir = project.testReportDir
+        Desktop.desktop.browse(new File(testRepDir, 'index.html').toURI())
+    } else {
+        println "Groovy Coding Project is complete. Well done!"
+    }
+}
+
+// since we're running in quiet logging, show the user what tests are running
+tasks.withType(Test) { testTask ->
+    testTask.beforeTest { descriptor ->
+        print "Running exercises in $descriptor.name()".padRight(60, '.')
+    }
+    testTask.afterTest { descriptor, result ->
+        println result.resultType
+    }
+}
