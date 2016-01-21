@@ -40,7 +40,5 @@ The `gradlew` can work through your proxy, just add the following parameters:
 $ ./gradlew groovy-coding -Dhttp.proxyHost=[http proxy] -Dhttp.proxyPort=[http proxy port]
 ```
 
-Here are some resources...
-
 [jdk]: http://www.oracle.com/technetwork/java/javase/downloads/index.html
 [ideac]: http://www.jetbrains.com/idea/download/
